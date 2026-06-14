@@ -3,23 +3,12 @@ const CACHE_NAME = "paradon-cache-v2";
 
 // Recursos principales a cachear durante la instalación
 const STATIC_ASSETS = [
-  "/",
-  "/index.html",
-  "/src/main.js",
-  "/src/style.css",
-  "/src/database.js",
-  "/src/utils.js",
-  "/src/components/bottom-nav.js",
-  "/src/components/view-home.js",
-  "/src/components/view-search.js",
-  "/src/components/view-favorites.js",
-  "/src/components/view-map.js",
-  "/src/components/view-profile.js",
-  "/src/components/view-detail.js",
-  "/logo.svg",
-  "/icon-192.png",
-  "/icon-512.png",
-  "/manifest.json",
+  "./",
+  "./index.html",
+  "./logo.svg",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./manifest.json",
   // Caching CDN libraries for complete offline mapping capability
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
