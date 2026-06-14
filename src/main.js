@@ -131,6 +131,12 @@ function bindTabEvents(tab) {
           originSelect.value = destSelect.value;
           destSelect.value = temp;
         }
+        
+        // Micro-interacción: rotar el botón 180 grados al presionar
+        btnSwap.classList.add("rotate-180");
+        setTimeout(() => {
+          btnSwap.classList.remove("rotate-180");
+        }, 300);
       });
     }
 

@@ -27,11 +27,12 @@ export function renderNavigation(activeTab) {
           const isActive = activeTab === tab.id;
           return `
             <a href="${tab.hash}" 
-               class="flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-200 group ${
+               class="flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-200 group relative ${
                  isActive 
                    ? 'bg-brand-green/10 dark:bg-brand-green/20 text-brand-green-dark dark:text-brand-green' 
                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
                }">
+              ${isActive ? `<span class="absolute left-0 top-3.5 bottom-3.5 w-1 bg-brand-green rounded-r-md"></span>` : ""}
               <span class="transition-transform group-hover:scale-110 ${isActive ? 'text-brand-green' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}">
                 ${tab.icon}
               </span>
