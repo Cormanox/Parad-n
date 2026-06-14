@@ -14,7 +14,7 @@ export function renderNavigation(activeTab) {
     <aside class="hidden lg:flex flex-col w-64 h-screen fixed top-0 left-0 bg-white dark:bg-dark-card border-r border-slate-200 dark:border-dark-border z-30 p-6">
       <!-- Logo y Encabezado -->
       <div class="flex items-center gap-3 mb-8">
-        <img src="/logo.svg" alt="Logo" width="40" height="40" class="w-10 h-10 drop-shadow-md">
+        <img src="./logo.svg" alt="Logo" width="40" height="40" class="w-10 h-10 drop-shadow-md">
         <div>
           <h1 class="text-xl font-black bg-gradient-to-r from-brand-green to-brand-blue bg-clip-text text-transparent tracking-tight">Paradón</h1>
           <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold tracking-wider uppercase">Buses de Costa Rica</p>

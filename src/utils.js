@@ -104,7 +104,7 @@ export function showNotificationToast(title, body) {
   if ("Notification" in window && Notification.permission === "granted") {
     new Notification(title, {
       body,
-      icon: "/logo.svg"
+      icon: "./logo.svg"
     });
   }
   
