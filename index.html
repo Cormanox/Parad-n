@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#10B981">
+  <meta name="description" content="Paradón - Consulta horarios, paradas e itinerarios de autobuses en Costa Rica. Totalmente responsive con soporte offline.">
+  <title>Paradón - Horarios y Paradas de Buses en Costa Rica</title>
+
+  <!-- Favicon e Iconos PWA -->
+  <link rel="icon" type="image/svg+xml" href="/logo.svg">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="manifest" href="/manifest.json">
+
+  <!-- SEO Tags Adicionales -->
+  <meta property="og:title" content="Paradón - Buses de Costa Rica">
+  <meta property="og:description" content="Consulta los itinerarios de buses en la GAM de forma fácil, incluso sin conexión a internet.">
+  <meta property="og:image" content="/icon-512.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS (Mapas Interactivos) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-dark-bg dark:text-slate-100 antialiased overflow-x-hidden min-h-screen">
+
+  <!-- Contenedor Principal Adaptativo -->
+  <div class="flex flex-col min-h-screen lg:pl-64">
+    
+    <!-- Encabezado Superior (Fijo y Glassmorphic) -->
+    <header class="sticky top-0 bg-white/80 dark:bg-dark-card/85 backdrop-blur-md border-b border-slate-200/50 dark:border-dark-border/50 py-3.5 px-4 lg:px-8 z-20 flex items-center justify-between">
+      
+      <!-- Identidad en Móvil -->
+      <div class="flex items-center gap-3 lg:hidden">
+        <img src="/logo.svg" alt="Paradón" width="32" height="32" class="w-8 h-8 drop-shadow">
+        <div>
+          <h1 class="text-base font-black bg-gradient-to-r from-brand-green to-brand-blue bg-clip-text text-transparent tracking-tight leading-none">Paradón</h1>
+          <span class="text-[9px] font-bold text-slate-400 leading-none">Costa Rica</span>
+        </div>
+      </div>
+
+      
+      <!-- Indicador en Escritorio -->
+      <div class="hidden lg:flex items-center gap-3">
+        <span class="text-xs text-slate-400 dark:text-slate-500 font-bold" id="header-date"></span>
+      </div>
+
+      <!-- Indicadores de Red (Conexión) -->
+      <div class="flex items-center gap-2">
+        <!-- Banner Offline -->
+        <div id="network-alert-banner" class="hidden flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 rounded-lg text-[9px] font-black uppercase tracking-wide">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-3.536 5 5 0 011.414-3.536m0 0L5.636 5.636m0 0L3 3m5.636 5.636l2.829 2.829M12 12v.01" />
+          </svg>
+          Sin Conexión
+        </div>
+        <!-- Banner Online -->
+        <div id="network-online-banner" class="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-wide">
+          <span class="w-1.5 h-1.5 bg-emerald-500 dark:bg-brand-green rounded-full animate-ping"></span>
+          Conectado
+        </div>
+      </div>
+    </header>
+
+    <!-- Contenido y Distribución de Paneles en Paralelo -->
+    <div class="flex-1 flex flex-col lg:flex-row relative">
+      
+      <!-- Panel Principal (Inyecciones de Vistas) -->
+      <main id="app" class="flex-1 min-w-0 transition-all duration-300"></main>
+
+      <!-- Panel de Detalles en Paralelo para Escritorios (>=1024px) -->
+      <div id="desktop-detail-panel" class="hidden lg:block w-[450px] border-l border-slate-200 dark:border-dark-border bg-slate-50/50 dark:bg-dark-bg/20 h-[calc(100vh-64px)] sticky top-[64px] overflow-y-auto z-10 transition-all">
+        <!-- Rellenado dinámico por JS o placeholder predeterminado -->
+        <div class="h-full flex flex-col items-center justify-center p-8 text-center text-slate-400 dark:text-slate-500">
+          <svg class="w-12 h-12 opacity-30 mb-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h4 class="font-bold text-sm text-slate-700 dark:text-slate-300">Detalles en Paralelo</h4>
+          <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
+            Haz clic en cualquier parada o tarjeta de ruta a la izquierda para desplegar sus horarios y mapas interactivos al instante.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Navegación Adaptativa Renderizada por JS -->
+    <div id="nav-container"></div>
+    
+    <!-- Contenedor Flotante de Notificaciones / Toasts -->
+    <div id="toast-container" class="fixed bottom-20 md:bottom-24 lg:bottom-6 right-4 left-4 md:left-auto max-w-sm flex flex-col gap-2 z-50"></div>
+  </div>
+
+  <!-- Leaflet JS (Mapas Interactivos) -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Script de Entrada de la Aplicación -->
+  <script type="module" src="/src/main.js"></script>
+
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        // Desactivar y limpiar el Service Worker en desarrollo para evitar conflictos con HMR de Vite
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            for (let registration of registrations) {
+              registration.unregister().then(success => {
+                if (success) console.log('Service Worker desregistrado para desarrollo en localhost.');
+              });
+            }
+          });
+          if (window.caches) {
+            caches.keys().then(names => {
+              for (let name of names) {
+                caches.delete(name);
+              }
+              console.log('Cachés locales limpiadas en desarrollo.');
+            });
+          }
+        } else {
+          // Registrar Service Worker en producción
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => {
+              console.log('Service Worker registrado con éxito en el ámbito:', reg.scope);
+            })
+            .catch(err => {
+              console.error('Fallo al registrar el Service Worker:', err);
+            });
+        }
+      });
+    }
+  </script>
+</body>
+</html>

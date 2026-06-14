@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@theme {
+  /* Paleta de colores inspirada en Costa Rica */
+  --color-brand-green-light: #34D399;
+  --color-brand-green: #10B981;
+  --color-brand-green-dark: #059669;
+  --color-brand-blue: #2563EB;
+  --color-brand-blue-dark: #1E3A8A;
+  --color-brand-orange: #F97316;
+  --color-brand-amber: #F59E0B;
+  
+  --color-dark-bg: #0B1329;
+  --color-dark-card: #152238;
+  --color-dark-border: #1E2E4A;
+}
+
+/* Tipografía y estilos base */
+@layer base {
+  body {
+    @apply font-sans bg-slate-50 text-slate-800 dark:bg-dark-bg dark:text-slate-100 transition-colors duration-300;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Clases utilitarias personalizadas y efectos visuales */
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glassmorphism {
+  background: rgba(21, 34, 56, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(30, 46, 74, 0.4);
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-slate-700 rounded-full hover:bg-slate-400;
+}
+
+/* Transiciones entre páginas */
+.view-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.view-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ajustes específicos para Leaflet offline / diseño */
+.leaflet-container {
+  font-family: inherit;
+  border-radius: 0.75rem;
+  z-index: 10;
+}
+
+.leaflet-popup-content-wrapper {
+  @apply bg-white dark:bg-dark-card text-slate-800 dark:text-slate-100 rounded-xl shadow-xl border border-slate-100 dark:border-dark-border;
+}
+
+.leaflet-popup-tip {
+  @apply bg-white dark:bg-dark-card;
+}
+
+/* Efecto de pulso para geolocalización */
+.user-pulse-marker {
+  position: relative;
+}
+
+.user-pulse-marker::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Timeline vertical de paradas */
+.timeline-line {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 16px;
+  width: 2px;
+  @apply bg-slate-200 dark:bg-slate-700;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: 11px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  @apply bg-brand-green dark:border-dark-card;
+}
+
+/* Tap target min size visual indicator helper */
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
