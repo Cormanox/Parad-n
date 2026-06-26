@@ -9,10 +9,14 @@ import { renderProfile, initProfileEvents } from "./components/view-profile.js";
 import { renderRouteDetail, initRouteDetailEvents } from "./components/view-detail.js";
 import { toggleFavorite, getUserLocation, calculateDistance, formatDistance, isFavorite } from "./utils.js";
 import { busRoutes } from "./database.js";
+import { store } from "./store.js";
+import { sanitize } from "./utils/security.js";
 
-// Estado global simple
-let currentTab = "home";
+// Estado global gestionado por store
 let deferredInstallPrompt = null;
+
+// Cache de vistas para evitar re-renders costosos
+const viewCache = new Map();
 
 // Enrutador Principal
 function router() {
@@ -35,16 +39,13 @@ function router() {
     const isDesktop = window.innerWidth >= 1024;
 
     if (isDesktop) {
-      // En escritorio, mantener la lista en el panel principal (ej. Buscar o Inicio)
-      // Si el panel principal está vacío o no es un listado, forzar a renderizar Buscar
-      if (currentTab !== "home" && currentTab !== "search" && currentTab !== "favorites") {
-        currentTab = "search";
+      if (store.state.currentTab !== "home" && store.state.currentTab !== "search" && store.state.currentTab !== "favorites") {
+        store.setState({ currentTab: "search" });
       }
 
-      renderTabContent(currentTab, appContainer);
-      bindTabEvents(currentTab);
+      renderTabContent(store.state.currentTab, appContainer);
+      bindTabEvents(store.state.currentTab);
 
-      // Mostrar el panel lateral derecho y renderizar el detalle ahí
       if (desktopDetailPanel) {
         desktopDetailPanel.classList.remove("hidden");
         desktopDetailPanel.innerHTML = renderRouteDetail(routeId);
@@ -52,32 +53,31 @@ function router() {
         bindDetailEvents(routeId);
       }
     } else {
-      // En móvil, renderizar el detalle a pantalla completa en el panel principal
       if (desktopDetailPanel) desktopDetailPanel.classList.add("hidden");
       appContainer.innerHTML = renderRouteDetail(routeId);
       initRouteDetailEvents(routeId);
       bindDetailEvents(routeId);
     }
     
-    // Actualizar barra de navegación con el tab activo previo
-    renderNav(currentTab);
+    renderNav(store.state.currentTab);
     return;
   }
 
   // 2. Casos de Tabs estándar
-  if (hash === "#/") currentTab = "home";
-  else if (hash === "#/buscar") currentTab = "search";
-  else if (hash === "#/favoritos") currentTab = "favorites";
-  else if (hash === "#/mapa") currentTab = "map";
-  else if (hash === "#/perfil") currentTab = "profile";
+  let tab = "home";
+  if (hash === "#/") tab = "home";
+  else if (hash === "#/buscar") tab = "search";
+  else if (hash === "#/favoritos") tab = "favorites";
+  else if (hash === "#/mapa") tab = "map";
+  else if (hash === "#/perfil") tab = "profile";
+  
+  store.setState({ currentTab: tab });
 
-  // En escritorio, el mapa y el perfil ocupan pantalla completa, ocultamos detalle
   if (window.innerWidth >= 1024) {
     if (desktopDetailPanel) {
-      if (currentTab === "map" || currentTab === "profile") {
+      if (tab === "map" || tab === "profile") {
         desktopDetailPanel.classList.add("hidden");
       } else {
-        // Restaurar placeholder si es home/search/favorites y no hay ruta seleccionada
         desktopDetailPanel.classList.remove("hidden");
         desktopDetailPanel.innerHTML = `
           <div class="h-full flex flex-col items-center justify-center p-8 text-center text-slate-400 dark:text-slate-500">
@@ -94,23 +94,44 @@ function router() {
     if (desktopDetailPanel) desktopDetailPanel.classList.add("hidden");
   }
 
-  renderTabContent(currentTab, appContainer);
-  bindTabEvents(currentTab);
-  renderNav(currentTab);
+  renderTabContent(tab, appContainer);
+  bindTabEvents(tab);
+  renderNav(tab);
 }
 
 // Renderiza el HTML del tab seleccionado
 function renderTabContent(tab, container) {
+  // Usar cache si la vista ya fue renderizada
+  if (viewCache.has(tab)) {
+    container.innerHTML = viewCache.get(tab);
+    applyViewAnimation(container);
+    return;
+  }
+
   // Animación de entrada
   container.classList.remove("view-enter-active");
   container.classList.add("view-enter");
   
-  if (tab === "home") container.innerHTML = renderHome();
-  else if (tab === "search") container.innerHTML = renderSearch();
-  else if (tab === "favorites") container.innerHTML = renderFavorites();
-  else if (tab === "map") container.innerHTML = renderMap();
-  else if (tab === "profile") container.innerHTML = renderProfile();
+  let html = "";
+  if (tab === "home") html = renderHome();
+  else if (tab === "search") html = renderSearch();
+  else if (tab === "favorites") html = renderFavorites();
+  else if (tab === "map") html = renderMap();
+  else if (tab === "profile") html = renderProfile();
 
+  // Guardar en cache
+  viewCache.set(tab, html);
+  container.innerHTML = html;
+
+  setTimeout(() => {
+    container.classList.remove("view-enter");
+    container.classList.add("view-enter-active");
+  }, 50);
+}
+
+function applyViewAnimation(container) {
+  container.classList.remove("view-enter-active");
+  container.classList.add("view-enter");
   setTimeout(() => {
     container.classList.remove("view-enter");
     container.classList.add("view-enter-active");
