@@ -7,10 +7,12 @@ import { renderFavorites, updateFavoritesView } from "./components/view-favorite
 import { renderMap, initMainMap } from "./components/view-map.js";
 import { renderProfile, initProfileEvents } from "./components/view-profile.js";
 import { renderRouteDetail, initRouteDetailEvents } from "./components/view-detail.js";
+import { renderRoutePlanner } from "./components/view-planner.js";
 import { toggleFavorite, getUserLocation, calculateDistance, formatDistance, isFavorite } from "./utils.js";
 import { busRoutes } from "./database.js";
 import { store } from "./store.js";
 import { sanitize } from "./utils/security.js";
+import { findRouteBetweenStops } from "./utils/planner.js";
 
 // Estado global gestionado por store
 let deferredInstallPrompt = null;
@@ -70,6 +72,7 @@ function router() {
   else if (hash === "#/favoritos") tab = "favorites";
   else if (hash === "#/mapa") tab = "map";
   else if (hash === "#/perfil") tab = "profile";
+  else if (hash === "#/planificador") tab = "planner";
   
   store.setState({ currentTab: tab });
 
@@ -101,14 +104,12 @@ function router() {
 
 // Renderiza el HTML del tab seleccionado
 function renderTabContent(tab, container) {
-  // Usar cache si la vista ya fue renderizada
   if (viewCache.has(tab)) {
     container.innerHTML = viewCache.get(tab);
     applyViewAnimation(container);
     return;
   }
 
-  // Animación de entrada
   container.classList.remove("view-enter-active");
   container.classList.add("view-enter");
   
@@ -118,8 +119,8 @@ function renderTabContent(tab, container) {
   else if (tab === "favorites") html = renderFavorites();
   else if (tab === "map") html = renderMap();
   else if (tab === "profile") html = renderProfile();
+  else if (tab === "planner") html = renderRoutePlanner();
 
-  // Guardar en cache
   viewCache.set(tab, html);
   container.innerHTML = html;
 
@@ -129,7 +130,7 @@ function renderTabContent(tab, container) {
   }, 50);
 }
 
-function applyViewAnimation(container) {
+function applyView(container) {
   container.classList.remove("view-enter-active");
   container.classList.add("view-enter");
   setTimeout(() => {
@@ -343,11 +344,94 @@ function bindTabEvents(tab) {
   else if (tab === "profile") {
     initProfileEvents();
     renderInstallPromo();
+  } else if (tab === "planner") {
+    initPlannerEvents();
   }
 }
 
-// Enlaza eventos específicos del detalle de ruta (botón de favoritos)
-function bindDetailEvents(routeId) {
+function initPlannerEvents() {
+  const originSelect = document.getElementById("plan-origin");
+  const destSelect = document.getElementById("plan-destination");
+  const btnCalculate = document.getElementById("btn-calculate-route");
+  const resultContainer = document.getElementById("planner-result");
+
+  if (!originSelect || !destSelect) return;
+
+  // Llenar selects con todas las paradas únicas
+  const allStops = [];
+  busRoutes.forEach(route => {
+    route.stops.forEach(stop => {
+      if (!allStops.find(s => s.name === stop.name)) {
+        allStops.push(stop);
+      }
+    });
+  });
+
+  const optionsHtml = allStops.map(stop => `<option value="${sanitize(stop.name)}">${stop.name}</option>`).join("");
+  originSelect.innerHTML += optionsHtml;
+  destSelect.innerHTML += optionsHtml;
+
+  if (btnCalculate) {
+    btnCalculate.addEventListener("click", () => {
+      const origin = originSelect.value;
+      const dest = destSelect.value;
+
+      if (!origin || !dest) {
+        alert("Por favor selecciona origen y destino");
+        return;
+      }
+
+      const result = findRouteBetweenStops(origin, dest);
+
+      if (result) {
+        resultContainer.classList.remove("hidden");
+        resultContainer.innerHTML = `
+          <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-5 rounded-2xl space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-emerald-800 dark:text-emerald-400">Ruta Encontrada</h3>
+              <span class="px-2 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-full">Sugerencia</span>
+            </div>
+            
+            <div class="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style="background-color: ${result.route.color}">
+                ${result.route.number}
+              </div>
+              <div>
+                <p class="text-xs font-bold text-slate-800 dark:text-slate-200">${result.route.name}</p>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400">Dirección: ${result.direction === 'toRosario' ? 'Hacia Rosario' : 'Hacia Naranjo'}</p>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <p class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">Paradas del trayecto</p>
+              <div class="relative pl-6 space-y-4 border-l-2 border-dashed border-emerald-300 dark:border-emerald-800">
+                ${result.stopsToTake.map((stop, index) => `
+                  <div class="relative">
+                    <div class="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-emerald-500 border-4 border-white dark:border-slate-900"></div>
+                    <p class="text-xs font-medium ${index === 0 ? 'text-brand-blue font-bold' : index === result.stopsToTake.length - 1 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'}">
+                      ${stop.name}
+                    </p>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+
+            <a href="#/ruta/${result.route.id}" class="block w-full text-center py-3 bg-slate-800 dark:bg-slate-700 text-white text-xs font-bold rounded-xl hover:bg-slate-700 transition-colors">
+              Ver Horarios de esta Ruta
+            </a>
+          </div>
+        `;
+      } else {
+        resultContainer.classList.remove("hidden");
+        resultContainer.innerHTML = `
+          <div class="p-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-400 text-xs rounded-2xl text-center">
+            No se encontró una ruta directa entre estas paradas. Intenta con otras ubicaciones.
+          </div>
+        `;
+      }
+    });
+  }
+}
   const btnDetailFav = document.getElementById("btn-detail-fav");
   if (btnDetailFav) {
     btnDetailFav.addEventListener("click", () => {
